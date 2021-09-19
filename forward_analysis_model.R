@@ -11,11 +11,13 @@ library(MLmetrics)
 library(DT)
 library(data.table)
 library(formattable)
+library(dotenv)
 #library(ggplot2)
 #library(scales)
 #library(DataExplorer)
 #library(rworldmap)
 options(scipen = 999, digits = 4)
+load_dot_env(file=".env")
 
 # Se conecta ao banco de dados da FIAP para consultar as tabelas
 connection <- dbConnect(
