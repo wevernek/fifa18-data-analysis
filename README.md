@@ -8,13 +8,6 @@ O time a ser montado deve ter a mesma qualidade dos melhores times europeus da a
 solicitaram uma análise da nossa empresa sobre quais jogadores poderiam adquirir, desde que tivessem um
 preço competitivo.
 
-### Pré-requisitos
-
-```
-- Git
-- R
-- Rstudio
-```
     
 ## Modelos ( R Notebook )
 
@@ -29,9 +22,10 @@ preço competitivo.
 ## Apresentação 
 
 * Case [Treemap House of Horror: Spooky EDA/LDA/Features](https://www.kaggle.com/headsortails/treemap-house-of-horror-spooky-eda-lda-features)
+ 
+Clique na imagem para ver o video no youtube! =D [![Watch the video](https://img.youtube.com/vi/Wtr7wZP-508/maxresdefault.jpg)](https://www.youtube.com/watch?v=Wtr7wZP-508)
 
-[![Watch the video](https://img.youtube.com/vi/Wtr7wZP-508/maxresdefault.jpg)](https://www.youtube.com/watch?v=Wtr7wZP-508)
-
+* [Treemap_House_of_Horror_Guia](PDF/Treemap_House_of_Horror_Guia.pdf)
 
 ## Autores-Colaboradores
 

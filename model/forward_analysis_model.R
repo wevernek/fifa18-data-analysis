@@ -22,11 +22,11 @@ load_dot_env(file=".env")
 # Se conecta ao banco de dados da FIAP para consultar as tabelas
 connection <- dbConnect(
   Postgres(),
-  host="35.225.23.89",
-  port = 55432,
-  dbname="fiapbi",
-  user="iauser",
-  password="iauser")
+  host=Sys.getEnv("HOST"),
+  port = Sys.getEnv("PORT"),
+  dbname= Sys.getEnv("DB_NAME"),
+  user= Sys.getEnv("USER"),
+  password= Sys.getEnv("PASSWORD"))
 
 # Recuperamos as informações das tabelas do banco para o nosso modelo
 df_players <- dbGetQuery(con=connection, "SELECT * FROM futebol.players")
@@ -74,7 +74,7 @@ FORWARD_EUROPE <- FORWARD_EUROPE %>%
   select_if(~ !any(is.na(.))) %>%
   select_if(~ any(is.numeric(.)))
 
-fifa.18.cb <- FORWARD_NOT_EUROPE %>% 
+fifa.18.fw <- FORWARD_NOT_EUROPE %>% 
   select_if(~ !any(is.na(.))) %>%
   select_if(~ any(is.numeric(.)))
 
@@ -125,15 +125,15 @@ FORWARD_EUROPE %>%
   add_segments(x=0, y=0, xend = 100000000, yend = 100000000, name="Equilíbrio")
 #-----------------------------------
 
-predito = predict(reg.test, fifa.18.cb)
-print(paste("R2: ", R2_Score(predito, fifa.18.cb$eur_value) ) )
-print(paste("MSE: ", MSE(predito, fifa.18.cb$eur_value) ) )
+predito = predict(reg.test, fifa.18.fw)
+print(paste("R2: ", R2_Score(predito, fifa.18.fw$eur_value) ) )
+print(paste("MSE: ", MSE(predito, fifa.18.fw$eur_value) ) )
 
-fifa.18.cb[, predito:=predito]
-fifa.18.cb <- fifa.18.cb %>% relocate(predito, .after = eur_value)
-head(fifa.18.cb)
+fifa.18.fw[, predito:=predito]
+fifa.18.fw <- fifa.18.fw %>% relocate(predito, .after = eur_value)
+head(fifa.18.fw)
 
-fifa.18.cb %>%
+fifa.18.fw %>%
   mutate(predito = predict(reg.test, .)) %>%
   plot_ly(x = ~eur_value,
           y= ~predito,
@@ -149,9 +149,9 @@ fifa.18.cb %>%
 output <- FORWARD_NOT_EUROPE %>%
   select(Position, name, eur_value) 
 
-output[, 'Preço "Calculado" (€)' := currency(fifa.18.cb$predito, symbol = '€', digits = 0L)]
-output[, 'Potencial Valorização (€)' := currency((fifa.18.cb$predito - fifa.18.cb$eur_value), symbol='€', digits = 0L) ]
-output[, 'Potencial Valorização (%)' := (percent((fifa.18.cb$predito - fifa.18.cb$eur_value) / 100000000)) ]
+output[, 'Preço "Calculado" (€)' := currency(fifa.18.fw$predito, symbol = '€', digits = 0L)]
+output[, 'Potencial Valorização (€)' := currency((fifa.18.fw$predito - fifa.18.fw$eur_value), symbol='€', digits = 0L) ]
+output[, 'Potencial Valorização (%)' := (percent((fifa.18.fw$predito - fifa.18.fw$eur_value) / 100000000)) ]
 
 output <- output %>% 
   rename(

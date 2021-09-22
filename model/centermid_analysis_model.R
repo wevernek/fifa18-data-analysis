@@ -20,11 +20,11 @@ options(scipen = 999, digits = 4)
 # Se conecta ao banco de dados da FIAP para consultar as tabelas
 connection <- dbConnect(
   Postgres(),
-  host="35.225.23.89",
-  port = 55432,
-  dbname="fiapbi",
-  user="iauser",
-  password="iauser")
+  host=Sys.getEnv("HOST"),
+  port = Sys.getEnv("PORT"),
+  dbname= Sys.getEnv("DB_NAME"),
+  user= Sys.getEnv("USER"),
+  password= Sys.getEnv("PASSWORD"))
 
 # Recuperamos as informações das tabelas do banco para o nosso modelo
 df_players <- dbGetQuery(con=connection, "SELECT * FROM futebol.players")
@@ -39,7 +39,6 @@ df = inner_join(df_players, df_financial)
 df = inner_join(df, df_habilities)
 df = inner_join(df, df_features)
 setDT(df) # transforma o dataframe em datatable
-
 
 # Países por continente nas suas respectivas listas
 Africa <- c('Algeria','Angola','Benin','Botswana','Burkina','Burundi','Cameroon','Cape Verde','Central African Republic','Chad','Comoros','Congo','Congo Democratic Republic of','Djibouti','Egypt','Equatorial Guinea','Eritrea','Ethiopia','Gabon','Gambia','Ghana','Guinea','Guinea-Bissau','Ivory Coast','Kenya','Lesotho','Liberia','Libya','Madagascar','Malawi','Mali','Mauritania','Mauritius','Morocco','Mozambique','Namibia','Niger','Nigeria','Rwanda','Sao Tome and Principe','Senegal','Seychelles','Sierra Leone','Somalia','South Africa','South Sudan','Sudan','Swaziland','Tanzania','Togo','Tunisia','Uganda','Zambia','Zimbabwe','Burkina Faso')
@@ -75,7 +74,7 @@ MID_EUROPE <- MID_EUROPE %>%
   select_if(~ !any(is.na(.))) %>%
   select_if(~ any(is.numeric(.)))
 
-fifa.18.cb <- MID_NOT_EUROPE %>% 
+fifa.18.cm <- MID_NOT_EUROPE %>% 
   select_if(~ !any(is.na(.))) %>%
   select_if(~ any(is.numeric(.)))
 
@@ -127,15 +126,15 @@ MID_EUROPE %>%
   add_segments(x=0, y=0, xend = 80000000, yend = 80000000, name="Equilíbrio")
 #-----------------------------------
 
-predito = predict(reg.test, fifa.18.cb)
-print(paste("R2: ", R2_Score(predito, fifa.18.cb$eur_value) ) )
-print(paste("MSE: ", MSE(predito, fifa.18.cb$eur_value) ) )
+predito = predict(reg.test, fifa.18.cm)
+print(paste("R2: ", R2_Score(predito, fifa.18.cm$eur_value) ) )
+print(paste("MSE: ", MSE(predito, fifa.18.cm$eur_value) ) )
 
-fifa.18.cb[, predito:=predito]
-fifa.18.cb <- fifa.18.cb %>% relocate(predito, .after = eur_value)
-head(fifa.18.cb)
+fifa.18.cm[, predito:=predito]
+fifa.18.cm <- fifa.18.cm %>% relocate(predito, .after = eur_value)
+head(fifa.18.cm)
 
-fifa.18.cb %>%
+fifa.18.cm %>%
   mutate(predito = predict(reg.test, .)) %>%
   plot_ly(x = ~eur_value,
           y= ~predito,
@@ -151,9 +150,9 @@ fifa.18.cb %>%
 output <- MID_NOT_EUROPE %>%
   select(Position, name, eur_value) 
 
-output[, 'Preço "Calculado" (€)' := currency(fifa.18.cb$predito, symbol = '€', digits = 0L)]
-output[, 'Potencial Valorização (€)' := currency((fifa.18.cb$predito - fifa.18.cb$eur_value), symbol='€', digits = 0L) ]
-output[, 'Potencial Valorização (%)' := (percent((fifa.18.cb$predito - fifa.18.cb$eur_value) / 100000000)) ]
+output[, 'Preço "Calculado" (€)' := currency(fifa.18.cm$predito, symbol = '€', digits = 0L)]
+output[, 'Potencial Valorização (€)' := currency((fifa.18.cm$predito - fifa.18.cm$eur_value), symbol='€', digits = 0L) ]
+output[, 'Potencial Valorização (%)' := (percent((fifa.18.cm$predito - fifa.18.cm$eur_value) / 100000000)) ]
 
 output <- output %>% 
   rename(

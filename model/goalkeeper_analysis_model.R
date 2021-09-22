@@ -1,4 +1,6 @@
 rm(list=ls())
+library(RPostgres)
+library(DBI)
 library(readr)
 library(dplyr)
 library(plotly)
@@ -6,110 +8,129 @@ library(tree)
 library(randomForest)
 library(corrplot)
 library(MLmetrics)
-library(DataExplorer)
-library(ggplot2)
-library(scales)
 library(DT)
 library(data.table)
-library(rworldmap)
+library(formattable)
+#library(ggplot2)
+#library(scales)
+#library(DataExplorer)
+#library(rworldmap)
 options(scipen = 999, digits = 4)
 
-#// 1) carregar os jogadores 
-fifa18 <- read_csv("/media/njaneto/HD1/FIAP/PROGRAMANDO_IA_COM_R/Trabalho_Final/data/fifa_game-2.csv", locale = locale(encoding = "ISO-8859-1")) 
-setDT(fifa18)
+# Se conecta ao banco de dados da FIAP para consultar as tabelas
+connection <- dbConnect(
+  Postgres(),
+  host=Sys.getEnv("HOST"),
+  port = Sys.getEnv("PORT"),
+  dbname= Sys.getEnv("DB_NAME"),
+  user= Sys.getEnv("USER"),
+  password= Sys.getEnv("PASSWORD"))
 
-#--- incluindo coluna de continente
-Africa<-c('Algeria','Angola','Benin','Botswana','Burkina','Burundi','Cameroon','Cape Verde','Central African Republic','Chad','Comoros','Congo','Congo Democratic Republic of','Djibouti','Egypt','Equatorial Guinea','Eritrea','Ethiopia','Gabon','Gambia','Ghana','Guinea','Guinea-Bissau','Ivory Coast','Kenya','Lesotho','Liberia','Libya','Madagascar','Malawi','Mali','Mauritania','Mauritius','Morocco','Mozambique','Namibia','Niger','Nigeria','Rwanda','Sao Tome and Principe','Senegal','Seychelles','Sierra Leone','Somalia','South Africa','South Sudan','Sudan','Swaziland','Tanzania','Togo','Tunisia','Uganda','Zambia','Zimbabwe','Burkina Faso')
-Antarctica<-c('Fiji','Kiribati','Marshall Islands','Micronesia','Nauru','New Zealand','Palau','Papua New Guinea','Samoa','Solomon Islands','Tonga','Tuvalu','Vanuatu')
-Asia<-c('Afghanistan','Bahrain','Bangladesh','Bhutan','Brunei','Burma (Myanmar)','Cambodia','China','East Timor','India','Indonesia','Iran','Iraq','Israel','Japan','Jordan','Kazakhstan','North Korea','South Korea','Kuwait','Kyrgyzstan','Laos','Lebanon','Malaysia','Maldives','Mongolia','Nepal','Oman','Pakistan','Philippines','Qatar','Russian Federation','Saudi Arabia','Singapore','Sri Lanka','Syria','Tajikistan','Thailand','Turkey','Turkmenistan','United Arab Emirates','Uzbekistan','Vietnam','Yemen','Russia')
-Europe<-c('Albania','Andorra','Armenia','Austria','Azerbaijan','Belarus','Belgium','Bosnia and Herzegovina','Bulgaria','Croatia','Cyprus','Czech Republic','Denmark','Estonia','Finland','France','Georgia','Germany','Greece','Hungary','Iceland','Ireland','Italy','Latvia','Liechtenstein','Lithuania','Luxembourg','Macedonia','Malta','Moldova','Monaco','Montenegro','Netherlands','Norway','Poland','Portugal','Romania','San Marino','Scotland','Serbi','Slovakia','Slovenia','Spain','Sweden','Switzerland','Ukraine','England','Vatican City','Republic of Ireland','Wales')
-North_america<-c('Antigua and Barbuda','Bahamas','Barbados','Belize','Canada','Costa Rica','Cuba','Dominica','Dominican Republic','El Salvador','Grenada','Guatemala','Haiti','Honduras','Jamaica','Mexico','Nicaragua','Panama','Saint Kitts and Nevis','Saint Lucia','Saint Vincent and the Grenadines','Trinidad and Tobago','United States')
-South_america<-c('Argentina','Bolivia','Brazil','Chile','Colombia','Ecuador','Guyana','Paraguay','Peru','Suriname','Uruguay','Venezuela')
+# Recuperamos as informações das tabelas do banco para o nosso modelo
+df_players <- dbGetQuery(con=connection, "SELECT * FROM futebol.players")
+df_habilities <- dbGetQuery(con=connection, "SELECT * FROM futebol.habilities")
+df_features <- dbGetQuery(con=connection, "SELECT * FROM futebol.features")
+df_financial <- dbGetQuery(con=connection, "SELECT * FROM futebol.financial")
 
-fifa18[, continente:= fifa18$nationality ]
-fifa18 <- fifa18 %>% relocate(continente, .after = nationality)
+dbDisconnect # Desconecta-se do banco
 
-fifa18$continente[fifa18$continente %in% Africa ] <- "Africa"
-fifa18$continente[fifa18$continente %in% Antarctica ] <- "Antarctica"
-fifa18$continente[fifa18$continente %in% Asia ] <- "Asia"
-fifa18$continente[fifa18$continente %in% Europe ] <- "Europe"
-fifa18$continente[fifa18$continente %in% North_america ] <- "North_america"
-fifa18$continente[fifa18$continente %in% South_america ] <- "South_america"
+# Faz os inner_joins dos dados consultados acima no nosso dataframe (df) principal
+df = inner_join(df_players, df_financial)
+df = inner_join(df, df_habilities)
+df = inner_join(df, df_features)
+setDT(df) # transforma o dataframe em datatable
 
-#// 2) filtrar somente goleiros
-fifa.18.gk_europe <- fifa18 %>%
-  filter(positioning == "14" & continente == "Europe" )
+# Países por continente nas suas respectivas listas
+Africa <- c('Algeria','Angola','Benin','Botswana','Burkina','Burundi','Cameroon','Cape Verde','Central African Republic','Chad','Comoros','Congo','Congo Democratic Republic of','Djibouti','Egypt','Equatorial Guinea','Eritrea','Ethiopia','Gabon','Gambia','Ghana','Guinea','Guinea-Bissau','Ivory Coast','Kenya','Lesotho','Liberia','Libya','Madagascar','Malawi','Mali','Mauritania','Mauritius','Morocco','Mozambique','Namibia','Niger','Nigeria','Rwanda','Sao Tome and Principe','Senegal','Seychelles','Sierra Leone','Somalia','South Africa','South Sudan','Sudan','Swaziland','Tanzania','Togo','Tunisia','Uganda','Zambia','Zimbabwe','Burkina Faso')
+Antarctica <- c('Fiji','Kiribati','Marshall Islands','Micronesia','Nauru','New Zealand','Palau','Papua New Guinea','Samoa','Solomon Islands','Tonga','Tuvalu','Vanuatu')
+Asia <- c('Afghanistan','Bahrain','Bangladesh','Bhutan','Brunei','Burma (Myanmar)','Cambodia','China','East Timor','India','Indonesia','Iran','Iraq','Israel','Japan','Jordan','Kazakhstan','North Korea','South Korea','Kuwait','Kyrgyzstan','Laos','Lebanon','Malaysia','Maldives','Mongolia','Nepal','Oman','Pakistan','Philippines','Qatar','Russian Federation','Saudi Arabia','Singapore','Sri Lanka','Syria','Tajikistan','Thailand','Turkey','Turkmenistan','United Arab Emirates','Uzbekistan','Vietnam','Yemen','Russia')
+Europe <- c('Albania','Andorra','Armenia','Austria','Azerbaijan','Belarus','Belgium','Bosnia and Herzegovina','Bulgaria','Croatia','Cyprus','Czech Republic','Denmark','Estonia','Finland','France','Georgia','Germany','Greece','Hungary','Iceland','Ireland','Italy','Latvia','Liechtenstein','Lithuania','Luxembourg','Macedonia','Malta','Moldova','Monaco','Montenegro','Netherlands','Norway','Poland','Portugal','Romania','San Marino','Scotland','Serbi','Slovakia','Slovenia','Spain','Sweden','Switzerland','Ukraine','England','Vatican City','Republic of Ireland','Wales')
+North_america <- c('Antigua and Barbuda','Bahamas','Barbados','Belize','Canada','Costa Rica','Cuba','Dominica','Dominican Republic','El Salvador','Grenada','Guatemala','Haiti','Honduras','Jamaica','Mexico','Nicaragua','Panama','Saint Kitts and Nevis','Saint Lucia','Saint Vincent and the Grenadines','Trinidad and Tobago','United States')
+South_america <- c('Argentina','Bolivia','Brazil','Chile','Colombia','Ecuador','Guyana','Paraguay','Peru','Suriname','Uruguay','Venezuela')
 
-#-- base para validacao
-fifa.18.gk_nao_europe <- fifa18 %>%
-  filter(positioning == "14" & continente != "Europe" )
+df[, continent :=  df$nationality] # Cria a coluna 'continent' espelhando a coluna 'nationality'
+df <- df %>% 
+  relocate(continent, .after = nationality) # Move 'continent' para depois da coluna 'nationality'
 
-unique(fifa.18.gk_europe$continente)
-unique(fifa.18.gk_nao_europe$continente)
+# Checa a Nacionalidade do jogador e atribui o continente de acordo com o que acha dentro das listas dos continentes
+df$continent[df$continent %in% Africa ] <- "Africa"
+df$continent[df$continent %in% Antarctica ] <- "Antarctica"
+df$continent[df$continent %in% Asia ] <- "Asia"
+df$continent[df$continent %in% Europe ] <- "Europe"
+df$continent[df$continent %in% North_america ] <- "North_america"
+df$continent[df$continent %in% South_america ] <- "South_america"
 
 
-#// 3) graficos
+# Jogadores meio-campo (GK) que atuam no continente europeu
+MID_EUROPE <- df %>%
+  filter(Position == "GK" & continent == "Europe")
 
-plot_intro(fifa.18.gk_europe)
-plot_missing(fifa.18.gk_europe)
+# Dataframe para validação - Jogadores meio-campo que NÃO jogam na europa
+MID_NOT_EUROPE <- df %>%
+  filter(Position == "GK" & continent != "Europe")
 
-#// 4) removendo os NAs e variaves nao numericas
-fifa.18.gk_europe <- fifa.18.gk_europe %>% 
+# Trata os dados removendo valores NA e não numéricos para treinamento do modelo
+MID_EUROPE <- MID_EUROPE %>% 
   select_if(~ !any(is.na(.))) %>%
-  select_if(~ any(is.numeric(.))) %>%
-  select(-ID,-positioning)
+  select_if(~ any(is.numeric(.)))
 
-fifa.18.gk <- fifa.18.gk_nao_europe %>% 
+fifa.18.gk <- MID_NOT_EUROPE %>% 
   select_if(~ !any(is.na(.))) %>%
-  select_if(~ any(is.numeric(.))) %>%
-  select(-ID,-positioning)
+  select_if(~ any(is.numeric(.)))
 
+# Boxplot dos valores de 'MID_EUROPE' ... Outliers no valor em euros
+boxplot(MID_EUROPE)
 
-#// 5) treinamento e predicao
-boxplot(fifa.18.gk_europe)
-
-corrMatrix <- cor(fifa.18.gk_europe)
+# Matrix de corelação das habilidades e características dos jogadores selecionados em MID_EUROPE
+corrMatrix <- cor(MID_EUROPE)
 corrplot.mixed(corrMatrix, 
-               lower = "ellipse", upper = "number",
+               lower = "ellipse", 
+               upper = "number",
                tl.pos = "lt",
                tl.col = "black",
-               order="hclust",
+               order="reg.test, .hclust",
                hclust.method = "ward.D",
                addrect = 3)
 
-reg <- tree(data = fifa.18.gk_europe, formula = eur_value ~ .)
+reg <- tree(data = MID_EUROPE, formula = eur_value ~ .)
 plot(reg)
 text(reg)
+summary(reg)
 
 set.seed(1)
-reg.test <- randomForest(formula = eur_value ~ ., data = fifa.18.gk_europe, ntree=100, proximity=TRUE, localImp = TRUE)
+reg.test <- randomForest(formula = eur_value ~ ., 
+                         data = MID_EUROPE, 
+                         ntree=100, 
+                         proximity=TRUE, 
+                         localImp=TRUE)
 plot(reg.test)
 
-predito = predict(reg.test, fifa.18.gk_europe)
-print(paste("R2: ", R2_Score(predito, fifa.18.gk_europe$eur_value) ) )
-print(paste("MSE: ", MSE(predito, fifa.18.gk_europe$eur_value) ) )
+predito = predict(reg.test, MID_EUROPE)
+print(paste("R2: ", R2_Score(predito, MID_EUROPE$eur_value) ) )
+print(paste("MSE: ", MSE(predito, MID_EUROPE$eur_value) ) )
 
-fifa.18.gk_europe[, predito:= predito ] 
-fifa.18.gk_europe <- fifa.18.gk_europe %>% relocate(predito, .after = eur_value)
-head(fifa.18.gk_europe)
+MID_EUROPE[, predito:=predito]
+MID_EUROPE <- MID_EUROPE %>% relocate(predito, .after = eur_value)
+head(MID_EUROPE)
 
-fifa.18.gk_europe %>%
+MID_EUROPE %>%
   mutate(predito = predict(reg.test, .)) %>%
   plot_ly(x = ~eur_value,
           y= ~predito,
           type='scatter',
           mode='markers',
-          text= ~paste0("Real: ", eur_value, "\nPredito: ", predito, "\nErro: ", eur_value-predito),
-          name="Disperscao") %>%
-  add_segments(x=0, y=0, xend = 20000000, yend = 20000000, name="Equilibrio")
-
-#-------------------------------------------------------------
+          text=~paste0("Real value: ", currency(eur_value, symbol='€', digits = 0L), 
+                       "\nPredicted value: ", currency(predito, symbol='€', digits = 0L), 
+                       "\nError: ", (eur_value - predito)),
+          name="Dispersão") %>%
+  add_segments(x=0, y=0, xend = 80000000, yend = 80000000, name="Equilíbrio")
+#-----------------------------------
 
 predito = predict(reg.test, fifa.18.gk)
 print(paste("R2: ", R2_Score(predito, fifa.18.gk$eur_value) ) )
 print(paste("MSE: ", MSE(predito, fifa.18.gk$eur_value) ) )
 
-fifa.18.gk[, predito:= predito ]
+fifa.18.gk[, predito:=predito]
 fifa.18.gk <- fifa.18.gk %>% relocate(predito, .after = eur_value)
 head(fifa.18.gk)
 
@@ -119,17 +140,23 @@ fifa.18.gk %>%
           y= ~predito,
           type='scatter',
           mode='markers',
-          text= ~paste0("Real: ", eur_value, "\nPredito: ", predito, "\nErro: ", eur_value-predito),
-          name="Disperscao") %>%
-  add_segments(x=0, y=0, xend = 20000000, yend = 20000000, name="Equilibrio")
-
-fifa.18.gk_final <- fifa.18.gk_nao_europe %>%
-  select(positioning,full_name, nationality, age , eur_value) 
-
-fifa.18.gk_final[,predito:=fifa.18.gk$predito]
-fifa.18.gk_final[, potential_value:= (abs(fifa.18.gk$predito - fifa.18.gk$eur_value)) ]
-fifa.18.gk_final[, 'potential_value_%' := (percent((fifa.18.gk$predito - fifa.18.gk$eur_value) / 100000000)) ]
-fifa.18.gk_final$positioning <- gsub('14', 'GK', fifa.18.gk_final$positioning)
+          text=~paste0("Real value: ", currency(eur_value, symbol='€', digits = 0L), 
+                       "\nPredicted value: ", currency(predito, symbol='€', digits = 0L), 
+                       "\nError: ", (eur_value - predito)),
+          name="Dispersão") %>%
+  add_segments(x=0, y=0, xend = 60000000, yend = 60000000, name="Equilíbrio")
 
 
+output <- MID_NOT_EUROPE %>%
+  select(Position, name, eur_value) 
 
+output[, 'Preço "Calculado" (€)' := currency(fifa.18.gk$predito, symbol = '€', digits = 0L)]
+output[, 'Potencial Valorização (€)' := currency((fifa.18.gk$predito - fifa.18.gk$eur_value), symbol='€', digits = 0L) ]
+output[, 'Potencial Valorização (%)' := (percent((fifa.18.gk$predito - fifa.18.gk$eur_value) / 100000000)) ]
+
+output <- output %>% 
+  rename(
+    'Posição' = Position,
+    'Jogador' = name,
+    'Preço de mercado' = eur_value
+  )

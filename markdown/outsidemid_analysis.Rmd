@@ -1,7 +1,7 @@
 ---
-title: "Case de Advanced Analytics GK"
-author: "Nilo Jose de Andrade Neto"
-subtitle: 'Analise para determinar os goleiros com maior potencial custo-beneficio '
+title: "Case de Advanced Analytics"
+author: "Davidson Mizael"
+subtitle: 'Analise para determinar os Lateral com maior potencial custo-beneficio '
 output:
   html_notebook:
     toc: yes
@@ -11,8 +11,8 @@ output:
     toc: yes
     df_print: paged
 ---
-# Predição de preços de goleiros(GK) em R
-![](img/goleiro.jpg){width=100%}  
+# Predição de preços de lateral em R
+![](img/Lateral.jpg){width=100%}  
 # Setup
 Célula oculta para o setup:
 ```{r setup, include=FALSE}
@@ -234,6 +234,6 @@ fifa.18.gk_final %>%
 
 *****
 # Rodapé
-### Case de Advanced Analytics GK
+### Case de Advanced Analytics
 *****
-*Nilo Jose de Andrade Neto - São Paulo - 2021*
+*Davidson Mizael - São Paulo - 2021*

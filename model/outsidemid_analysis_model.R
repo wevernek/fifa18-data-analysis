@@ -69,7 +69,7 @@ OMID_EUROPE <- OMID_EUROPE %>%
   select_if(~ !any(is.na(.))) %>%
   select_if(~ any(is.numeric(.)))
 
-fifa.18.cb <- OMID_NOT_EUROPE %>% 
+fifa.18.om <- OMID_NOT_EUROPE %>% 
   select_if(~ !any(is.na(.))) %>%
   select_if(~ any(is.numeric(.)))
 
@@ -125,15 +125,15 @@ OMID_EUROPE %>%
 
 #Prediçao dos valores
 
-predito = predict(reg.test, fifa.18.cb)
-print(paste("R2: ", R2_Score(predito, fifa.18.cb$eur_value) ) )
-print(paste("MSE: ", MSE(predito, fifa.18.cb$eur_value) ) )
+predito = predict(reg.test, fifa.18.om)
+print(paste("R2: ", R2_Score(predito, fifa.18.om$eur_value) ) )
+print(paste("MSE: ", MSE(predito, fifa.18.om$eur_value) ) )
 
-fifa.18.cb[, predito:=predito]
-fifa.18.cb <- fifa.18.cb %>% relocate(predito, .after = eur_value)
-head(fifa.18.cb)
+fifa.18.om[, predito:=predito]
+fifa.18.om <- fifa.18.om %>% relocate(predito, .after = eur_value)
+head(fifa.18.om)
 
-fifa.18.cb %>%
+fifa.18.om %>%
   mutate(predito = predict(reg.test, .)) %>%
   plot_ly(x = ~eur_value,
           y= ~predito,
@@ -149,9 +149,9 @@ fifa.18.cb %>%
 output <- OMID_NOT_EUROPE %>%
   select(Position, name, eur_value) 
 
-output[, 'Preço "Calculado" (€)' := currency(fifa.18.cb$predito, symbol = '€', digits = 0L)]
-output[, 'Potencial Valorização (€)' := currency((fifa.18.cb$predito - fifa.18.cb$eur_value), symbol='€', digits = 0L) ]
-output[, 'Potencial Valorização (%)' := (percent((fifa.18.cb$predito - fifa.18.cb$eur_value) / 100000000)) ]
+output[, 'Preço "Calculado" (€)' := currency(fifa.18.om$predito, symbol = '€', digits = 0L)]
+output[, 'Potencial Valorização (€)' := currency((fifa.18.om$predito - fifa.18.om$eur_value), symbol='€', digits = 0L) ]
+output[, 'Potencial Valorização (%)' := (percent((fifa.18.om$predito - fifa.18.om$eur_value) / 100000000)) ]
 
 output <- output %>% 
   rename(
