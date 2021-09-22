@@ -1,12 +1,12 @@
 # Case de Advanced Analytics
 
-    O ano é 2018 e nossa consultoria se mostrou muito forte em Advanced Analytics. Um de nossos clientes é uma
-    empresa que comprou recentemente um pequeno time de futebol europeu. Por se tratar de investimentos milionários,
-    nosso cliente decidiu que somos os mais indicados a avaliar preços de jogadores no mundo.
+O ano é 2018 e nossa consultoria se mostrou muito forte em Advanced Analytics. Um de nossos clientes é uma
+empresa que comprou recentemente um pequeno time de futebol europeu. Por se tratar de investimentos milionários,
+nosso cliente decidiu que somos os mais indicados a avaliar preços de jogadores no mundo.
 
-    O time a ser montado deve ter a mesma qualidade dos melhores times europeus da atualidade. Para isso,
-    solicitaram uma análise da nossa empresa sobre quais jogadores poderiam adquirir, desde que tivessem um
-    preço competitivo.
+O time a ser montado deve ter a mesma qualidade dos melhores times europeus da atualidade. Para isso,
+solicitaram uma análise da nossa empresa sobre quais jogadores poderiam adquirir, desde que tivessem um
+preço competitivo.
 
 ### Pré-requisitos
 
@@ -20,9 +20,9 @@
 
 * [Goalkeeper](markdown/goalkeeper_analysis.Rmd)
 * [Center-Back](markdown/centerback_analysis.Rmd)
-* [Outside-back](markdown/outsideback_analysis.Rmd)
-* [Center-mid](markdown/centermid_analysis.Rmd)
-* [Outside-mid](markdown/outsidemid_analysis.Rmd)
+* [Outside-Back](markdown/outsideback_analysis.Rmd)
+* [Center-Mid](markdown/centermid_analysis.Rmd)
+* [Outside-Mid](markdown/outsidemid_analysis.Rmd)
 * [Forward](markdown/forward_analysis.Rmd)
 
 
