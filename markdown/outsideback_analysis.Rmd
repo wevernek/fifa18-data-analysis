@@ -17,6 +17,7 @@ output:
 Célula oculta para o setup:
 ```{r setup, include=FALSE}
 rm(list=ls())
+library(DBI)
 library(readr)
 library(dplyr)
 library(plotly)
@@ -24,32 +25,34 @@ library(tree)
 library(randomForest)
 library(corrplot)
 library(MLmetrics)
-library(DataExplorer)
-library(ggplot2)
-library(scales)
 library(DT)
 library(data.table)
+library(formattable)
+#library(RPostgres)
+library(ggplot2)
+library(scales)
+library(DataExplorer)
 library(rworldmap)
 options(scipen = 999, digits = 4)
 ```
 
 # Obtenção de Dados
-Os dados são obtidos de um servidor SQL ou csv e armazenados na variável `fifa18`
+Os dados são obtidos de um servidor SQL ou csv e armazenados na variável `df`
 
 ```{r}
-fifa18 <- read_csv("data/fifa_game-2.csv", locale = locale(encoding = "ISO-8859-1")) 
-setDT(fifa18)
+df <- read_csv("/media/njaneto/HD1/FIAP/PROGRAMANDO_IA_COM_R/fifa18-data-analysis/model/data/fifa18.csv", locale = locale(encoding = "ISO-8859-1"))
+setDT(df)
 ```
 # Análise dos dados
 
 ## Visualização inicial dos dados
 Quantidade de linhas e colunas obtidas:
 ```{r}
-dim(fifa18)
+dim(df)
 ```
 Primeiros registros obtidos:
 ```{r}
-head(fifa18)
+head(df)
 ```
 Incluindo coluna de continente
 ```{r}
@@ -60,26 +63,31 @@ Europe<-c('Albania','Andorra','Armenia','Austria','Azerbaijan','Belarus','Belgiu
 North_america<-c('Antigua and Barbuda','Bahamas','Barbados','Belize','Canada','Costa Rica','Cuba','Dominica','Dominican Republic','El Salvador','Grenada','Guatemala','Haiti','Honduras','Jamaica','Mexico','Nicaragua','Panama','Saint Kitts and Nevis','Saint Lucia','Saint Vincent and the Grenadines','Trinidad and Tobago','United States')
 South_america<-c('Argentina','Bolivia','Brazil','Chile','Colombia','Ecuador','Guyana','Paraguay','Peru','Suriname','Uruguay','Venezuela')
 
-fifa18[, continente:= fifa18$nationality ]
-fifa18 <- fifa18 %>% relocate(continente, .after = nationality)
+df[, continent:= df$nationality]
+df <- df %>% relocate(continent, .after = nationality)
 
-fifa18$continente[fifa18$continente %in% Africa ] <- "Africa"
-fifa18$continente[fifa18$continente %in% Antarctica ] <- "Antarctica"
-fifa18$continente[fifa18$continente %in% Asia ] <- "Asia"
-fifa18$continente[fifa18$continente %in% Europe ] <- "Europe"
-fifa18$continente[fifa18$continente %in% North_america ] <- "North_america"
-fifa18$continente[fifa18$continente %in% South_america ] <- "South_america"
+df$continent[df$continent %in% Africa ] <- "Africa"
+df$continent[df$continent %in% Antarctica ] <- "Antarctica"
+df$continent[df$continent %in% Asia ] <- "Asia"
+df$continent[df$continent %in% Europe ] <- "Europe"
+df$continent[df$continent %in% North_america ] <- "North_america"
+df$continent[df$continent %in% South_america ] <- "South_america"
+
 ```
 ## Graficos de analise dos dados
 Validação incial de dados 
 ```{r}
-plot_intro(fifa18)
-plot_missing(fifa18)
+plot_intro(df)
+```
+
+
+```{r}
+plot_missing(df)
 ```
 
 Jogadores por pais
 ```{r}
-pais <- fifa18[,.N, by=nationality]
+pais <- df[,.N, by=nationality]
 fr <- joinCountryData2Map(dF=pais, joinCode = "NAME", nameJoinColumn = "nationality", verbose = F)
 
 mapCountryData(mapToPlot = fr,nameColumnToPlot = "N",catMethod = "fixedWidth",
@@ -90,42 +98,39 @@ mapCountryData(mapToPlot = fr,nameColumnToPlot = "N",catMethod = "fixedWidth",
 ```
 
 
-## Filtrando somente goleiros
-selecionando os goleiros da variável `fifa18` e criando a variável `fifa.18.gk_europe`
+## Filtrando somente atacantes
+selecionando os atacantes 
 ```{r}
-fifa.18.gk_europe <- fifa18 %>%
-  filter(positioning == "14" & continente == "Europe" )
+OBACK_EUROPE <- df %>%
+  filter(Position == "Outside-back" & continent == "Europe")
 
-unique(fifa.18.gk_europe$continente)
-head(fifa.18.gk_europe)
+head(OBACK_EUROPE)
 ```
-selecionando os goleiros da variável `fifa18` e criando a variável `fifa.18.gk_nao_europe`
+selecionando os goleiros da variável 
 ```{r}
-fifa.18.gk_nao_europe <- fifa18 %>%
-  filter(positioning == "14" & continente != "Europe" )
+#-- base para validacao
+OBACK_NOT_EUROPE <- df %>%
+  filter(Position == "Outside-back" & continent != "Europe")
 
-unique(fifa.18.gk_nao_europe$continente)
-head(fifa.18.gk_nao_europe)
+head(OBACK_NOT_EUROPE)
 ```
 
 ## Removendo dados 
 removendo os NAs e variaves nao numericas da base de treino
 ```{r}
-fifa.18.gk_europe <- fifa.18.gk_europe %>% 
+OBACK_EUROPE <- OBACK_EUROPE %>% 
   select_if(~ !any(is.na(.))) %>%
-  select_if(~ any(is.numeric(.))) %>%
-  select(-ID,-positioning)
+  select_if(~ any(is.numeric(.)))
 
-head(fifa.18.gk_europe)
+head(OBACK_EUROPE)
 ```
 Removendo os NAs e variaves nao numericas da base de validacao
 ```{r}
-fifa.18.gk <- fifa.18.gk_nao_europe %>% 
+fifa.18.ob <- OBACK_NOT_EUROPE %>% 
   select_if(~ !any(is.na(.))) %>%
-  select_if(~ any(is.numeric(.))) %>%
-  select(-ID,-positioning)
+  select_if(~ any(is.numeric(.)))
 
-head(fifa.18.gk)
+head(fifa.18.ob)
 ```
 
 #  Treinamento e predicao
@@ -133,17 +138,17 @@ head(fifa.18.gk)
 ## Boxplot 
 Grafico de boxplot simples
 ```{r}
-boxplot(fifa.18.gk_europe)
-
+boxplot(OBACK_EUROPE)
 ```
 
 ## Correlacao 
 
 Grafico de Correlacao simples
 ```{r}
-corrMatrix <- cor(fifa.18.gk_europe)
+corrMatrix <- cor(OBACK_EUROPE)
 corrplot.mixed(corrMatrix, 
-               lower = "ellipse", upper = "number",
+               lower = "ellipse", 
+               upper = "number",
                tl.pos = "lt",
                tl.col = "black",
                order="hclust",
@@ -156,7 +161,11 @@ corrplot.mixed(corrMatrix,
 Modelo com Floresta
 ```{r}
 set.seed(1)
-reg.test <- randomForest(formula = eur_value ~ ., data = fifa.18.gk_europe, ntree=100, proximity=TRUE, localImp = TRUE)
+reg.test <- randomForest(formula = eur_value ~ ., 
+                         data = OBACK_EUROPE, 
+                         ntree=100, 
+                         proximity=TRUE, 
+                         localImp=TRUE)
 plot(reg.test)
 
 ```
@@ -164,54 +173,58 @@ plot(reg.test)
 ## Avaliação  
 Predição dos preços dos goleiros
 ```{r}
-predito = predict(reg.test, fifa.18.gk_europe)
-print(paste("R2: ", R2_Score(predito, fifa.18.gk_europe$eur_value) ) )
-print(paste("MSE: ", MSE(predito, fifa.18.gk_europe$eur_value) ) )
+predito = predict(reg.test, OBACK_EUROPE)
+print(paste("R2: ", R2_Score(predito, OBACK_EUROPE$eur_value) ) )
+print(paste("MSE: ", MSE(predito, OBACK_EUROPE$eur_value) ) )
 ```
 ```{r}
-fifa.18.gk_europe[, predito:= predito ] 
-fifa.18.gk_europe <- fifa.18.gk_europe %>% relocate(predito, .after = eur_value)
-head(fifa.18.gk_europe)
+OBACK_EUROPE[, predito:=predito]
+OBACK_EUROPE <- OBACK_EUROPE %>% relocate(predito, .after = eur_value)
+head(OBACK_EUROPE)
 ```
 ## Dispersão
 Avaliaçao de acerto X erro do modelo 
 
 ```{r}
-fifa.18.gk_europe %>%
+OBACK_EUROPE %>%
   mutate(predito = predict(reg.test, .)) %>%
   plot_ly(x = ~eur_value,
           y= ~predito,
           type='scatter',
           mode='markers',
-          text= ~paste0("Real: ", eur_value, "\nPredito: ", predito, "\nErro: ", eur_value-predito),
-          name="Disperscao") %>%
-  add_segments(x=0, y=0, xend = 20000000, yend = 20000000, name="Equilibrio")
+          text=~paste0("Real value: ", currency(eur_value, symbol='€', digits = 0L), 
+                       "\nPredicted value: ", currency(predito, symbol='€', digits = 0L), 
+                       "\nError: ", (eur_value - predito)),
+          name="Dispersão") %>%
+  add_segments(x=0, y=0, xend = 100000000, yend = 100000000, name="Equilíbrio")
 ```
 
 ## Avaliação II
 ### Avaliação dos preços (baseado nos dados que nunca viu antes!)
 Predição dos preços dos goleiros
 ```{r}
-predito = predict(reg.test, fifa.18.gk)
-print(paste("R2: ", R2_Score(predito, fifa.18.gk$eur_value) ) )
-print(paste("MSE: ", MSE(predito, fifa.18.gk$eur_value) ) )
+predito = predict(reg.test, fifa.18.ob)
+print(paste("R2: ", R2_Score(predito, fifa.18.ob$eur_value) ) )
+print(paste("MSE: ", MSE(predito, fifa.18.ob$eur_value) ) )
 ```
 ```{r}
-fifa.18.gk[, predito:= predito ]
-fifa.18.gk <- fifa.18.gk %>% relocate(predito, .after = eur_value)
-head(fifa.18.gk)
+fifa.18.ob[, predito:=predito]
+fifa.18.ob <- fifa.18.ob %>% relocate(predito, .after = eur_value)
+head(fifa.18.ob)
 ```
 ## Dispersão
 ```{r}
-fifa.18.gk %>%
+fifa.18.ob %>%
   mutate(predito = predict(reg.test, .)) %>%
   plot_ly(x = ~eur_value,
           y= ~predito,
           type='scatter',
           mode='markers',
-          text= ~paste0("Real: ", eur_value, "\nPredito: ", predito, "\nErro: ", eur_value-predito),
-          name="Disperscao") %>%
-  add_segments(x=0, y=0, xend = 20000000, yend = 20000000, name="Equilibrio")
+          text=~paste0("Real value: ", currency(eur_value, symbol='€', digits = 0L), 
+                       "\nPredicted value: ", currency(predito, symbol='€', digits = 0L), 
+                       "\nError: ", (eur_value - predito)),
+          name="Dispersão") %>%
+  add_segments(x=0, y=0, xend = 100000000, yend = 100000000, name="Equilíbrio")
 ```
 
 #  Resultado
@@ -219,21 +232,26 @@ fifa.18.gk %>%
 ## resultado final com os goleiros e seus valores preditos 
 
 ```{r}
-fifa.18.gk_final <- fifa.18.gk_nao_europe %>%
-  select(positioning,full_name, nationality, age , eur_value) 
+output <- OBACK_NOT_EUROPE %>%
+  select(Position, name, eur_value) 
 
-fifa.18.gk_final[,predito:=fifa.18.gk$predito]
-fifa.18.gk_final[, potential_value:= (abs(fifa.18.gk$predito - fifa.18.gk$eur_value)) ]
-fifa.18.gk_final[, 'potential_value_%' := (percent((fifa.18.gk$predito - fifa.18.gk$eur_value) / 100000000)) ]
-fifa.18.gk_final$positioning <- gsub('14', 'GK', fifa.18.gk_final$positioning)
+output[, eur_value := currency(fifa.18.ob$eur_value, symbol = '€', digits = 0L)]
+output[, 'Preço "Calculado" (€)' := currency(fifa.18.ob$predito, symbol = '€', digits = 0L)]
+output[, 'Potencial Valorização (€)' := currency((fifa.18.ob$predito - fifa.18.ob$eur_value), symbol='€', digits = 0L) ]
+output[, 'Potencial Valorização (%)' := (percent((fifa.18.ob$predito - fifa.18.ob$eur_value) / 100000000)) ]
 
-fifa.18.gk_final %>%
-  select(-nationality,-age) %>%
-  head()
+output <- output %>% 
+  rename(
+    'Posição' = Position,
+    'Jogador' = name,
+    'Preço de mercado' = eur_value
+  )
+
+head(output)
+
 ```
-
 *****
 # Rodapé
-### Case de Advanced Analytics GK
+### Case de Advanced Analytics
 *****
 *Pedro Albuquerque - São Paulo - 2021*

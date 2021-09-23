@@ -1,5 +1,4 @@
 rm(list=ls())
-library(RPostgres)
 library(DBI)
 library(readr)
 library(dplyr)
@@ -11,6 +10,7 @@ library(MLmetrics)
 library(DT)
 library(data.table)
 library(formattable)
+library(RPostgres)
 #library(ggplot2)
 #library(scales)
 #library(DataExplorer)
@@ -38,6 +38,8 @@ dbDisconnect # Desconecta-se do banco
 df = inner_join(df_players, df_financial)
 df = inner_join(df, df_habilities)
 df = inner_join(df, df_features)
+
+#df <- read_csv("fifa18-data-analysis/model/data/fifa18.csv", locale = locale(encoding = "ISO-8859-1"))
 setDT(df) # transforma o dataframe em datatable
 
 # Países por continente nas suas respectivas listas
@@ -88,7 +90,7 @@ corrplot.mixed(corrMatrix,
                upper = "number",
                tl.pos = "lt",
                tl.col = "black",
-               order="reg.test, .hclust",
+               order="hclust",
                hclust.method = "ward.D",
                addrect = 3)
 
@@ -150,6 +152,7 @@ fifa.18.cm %>%
 output <- MID_NOT_EUROPE %>%
   select(Position, name, eur_value) 
 
+output[, eur_value := currency(fifa.18.cm$eur_value, symbol = '€', digits = 0L)]
 output[, 'Preço "Calculado" (€)' := currency(fifa.18.cm$predito, symbol = '€', digits = 0L)]
 output[, 'Potencial Valorização (€)' := currency((fifa.18.cm$predito - fifa.18.cm$eur_value), symbol='€', digits = 0L) ]
 output[, 'Potencial Valorização (%)' := (percent((fifa.18.cm$predito - fifa.18.cm$eur_value) / 100000000)) ]
@@ -160,3 +163,5 @@ output <- output %>%
     'Jogador' = name,
     'Preço de mercado' = eur_value
   )
+
+head(output)

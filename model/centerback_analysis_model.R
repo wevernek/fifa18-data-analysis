@@ -39,7 +39,7 @@ df = inner_join(df_players, df_financial)
 df = inner_join(df, df_habilities)
 df = inner_join(df, df_features)
 
-#df <- read_csv("../model/data/fifa18.csv", locale = locale(encoding = "ISO-8859-1"))
+#df <- read_csv("fifa18-data-analysis/model/data/fifa18.csv", locale = locale(encoding = "ISO-8859-1"))
 setDT(df) # transforma o dataframe em datatable
 
 # Países por continente nas suas respectivas listas

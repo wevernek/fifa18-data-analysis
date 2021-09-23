@@ -1,5 +1,4 @@
 rm(list=ls())
-library(RPostgres)
 library(DBI)
 library(readr)
 library(dplyr)
@@ -11,6 +10,11 @@ library(MLmetrics)
 library(DT)
 library(data.table)
 library(formattable)
+library(RPostgres)
+#library(ggplot2)
+#library(scales)
+#library(DataExplorer)
+#library(rworldmap)
 options(scipen = 999, digits = 4)
 
 # Se conecta ao banco de dados da FIAP para consultar as tabelas
@@ -32,6 +36,8 @@ dbDisconnect # Desconecta-se do banco
 
 # Faz os inner_joins dos dados consultados acima no nosso dataframe (df) principal
 inner_join(df_players, df_financial) %>% inner_join(df_habilities) %>% inner_join(df_features) -> df
+
+df <- read_csv("/media/njaneto/HD1/FIAP/PROGRAMANDO_IA_COM_R/fifa18-data-analysis/model/data/fifa18.csv", locale = locale(encoding = "ISO-8859-1"))
 setDT(df) # transforma o dataframe em datatable
 
 
@@ -54,7 +60,6 @@ df$continent[df$continent %in% Asia ] <- "Asia"
 df$continent[df$continent %in% Europe ] <- "Europe"
 df$continent[df$continent %in% North_america ] <- "North_america"
 df$continent[df$continent %in% South_america ] <- "South_america"
-
 
 # Jogadores laterais (Outside-mid) que atuam no continente europeu
 OMID_EUROPE <- df %>%
@@ -83,7 +88,7 @@ corrplot.mixed(corrMatrix,
                upper = "number",
                tl.pos = "lt",
                tl.col = "black",
-               order="reg.test, .hclust",
+               order="hclust",
                hclust.method = "ward.D",
                addrect = 3)
 
@@ -91,7 +96,6 @@ reg <- tree(data = OMID_EUROPE, formula = eur_value ~ .)
 plot(reg)
 text(reg)
 summary(reg)
-
 
 #Treino do modelo
 set.seed(1)
@@ -122,7 +126,6 @@ OMID_EUROPE %>%
           name="Dispersão") %>%
   add_segments(x=0, y=0, xend = 80000000, yend = 80000000, name="Equilíbrio")
 
-
 #Prediçao dos valores
 
 predito = predict(reg.test, fifa.18.om)
@@ -149,6 +152,7 @@ fifa.18.om %>%
 output <- OMID_NOT_EUROPE %>%
   select(Position, name, eur_value) 
 
+output[, eur_value := currency(fifa.18.om$eur_value, symbol = '€', digits = 0L)]
 output[, 'Preço "Calculado" (€)' := currency(fifa.18.om$predito, symbol = '€', digits = 0L)]
 output[, 'Potencial Valorização (€)' := currency((fifa.18.om$predito - fifa.18.om$eur_value), symbol='€', digits = 0L) ]
 output[, 'Potencial Valorização (%)' := (percent((fifa.18.om$predito - fifa.18.om$eur_value) / 100000000)) ]
@@ -159,3 +163,5 @@ output <- output %>%
     'Jogador' = name,
     'Preço de mercado' = eur_value
   )
+
+head(output)
