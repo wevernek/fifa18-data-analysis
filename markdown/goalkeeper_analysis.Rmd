@@ -44,17 +44,18 @@ df <- read_csv("/media/njaneto/HD1/FIAP/PROGRAMANDO_IA_COM_R/fifa18-data-analysi
 setDT(df)
 ```
 # Análise dos dados
+É muito importante prepararmos os dados para a análise e predição que iremos fazer.
 
 ## Visualização inicial dos dados
-Quantidade de linhas e colunas obtidas:
+A primeira coisa que iremos fazer é obter o número de linhas e colunas do dataframe:
 ```{r}
 dim(df)
 ```
-Primeiros registros obtidos:
+Depois trazemos os primeiros registros utilizando a funão head()
 ```{r}
 head(df)
 ```
-Incluindo coluna de continente
+E por fim incluímos todos os continentes no dataframe
 ```{r}
 Africa<-c('Algeria','Angola','Benin','Botswana','Burkina','Burundi','Cameroon','Cape Verde','Central African Republic','Chad','Comoros','Congo','Congo Democratic Republic of','Djibouti','Egypt','Equatorial Guinea','Eritrea','Ethiopia','Gabon','Gambia','Ghana','Guinea','Guinea-Bissau','Ivory Coast','Kenya','Lesotho','Liberia','Libya','Madagascar','Malawi','Mali','Mauritania','Mauritius','Morocco','Mozambique','Namibia','Niger','Nigeria','Rwanda','Sao Tome and Principe','Senegal','Seychelles','Sierra Leone','Somalia','South Africa','South Sudan','Sudan','Swaziland','Tanzania','Togo','Tunisia','Uganda','Zambia','Zimbabwe','Burkina Faso')
 Antarctica<-c('Fiji','Kiribati','Marshall Islands','Micronesia','Nauru','New Zealand','Palau','Papua New Guinea','Samoa','Solomon Islands','Tonga','Tuvalu','Vanuatu')
@@ -75,38 +76,38 @@ df$continent[df$continent %in% South_america ] <- "South_america"
 
 ```
 ## Graficos de analise dos dados
-Validação incial de dados 
+Antes de iniciar a nossa análise, iremos platar o dataframe para analisar o gráfico resultante.
 ```{r}
 plot_intro(df)
 ```
-
+Usamos a função plot_missing() para mostrar quais colunas possuem dados faltantes em nosso dataframe.
 
 ```{r}
 plot_missing(df)
 ```
 
-Jogadores por pais
+Então criamos um mapa mostrando a distribuição dos jogadores por país.
 ```{r}
 pais <- df[,.N, by=nationality]
 fr <- joinCountryData2Map(dF=pais, joinCode = "NAME", nameJoinColumn = "nationality", verbose = F)
 
 mapCountryData(mapToPlot = fr,nameColumnToPlot = "N",catMethod = "fixedWidth",
                oceanCol = "steelblue1",missingCountryCol = "white",
-               mapTitle = "Jogadores por pais",
+               mapTitle = "Jogadores por país",
                aspect = "variable") 
 
 ```
 
 
-## Filtrando somente atacantes
-selecionando os atacantes 
+## Filtrando Goleiro
+Ainda na análise, filtramos os goleiros dos times
 ```{r}
 GK_EUROPE <- df %>%
   filter(Position == "GK" & continent == "Europe")
 
 head(GK_EUROPE)
 ```
-selecionando os goleiros da variável 
+Então, selecionamos os goleiros da variável
 ```{r}
 #-- base para validacao
 GK_NOT_EUROPE <- df %>%
@@ -116,7 +117,7 @@ head(GK_NOT_EUROPE)
 ```
 
 ## Removendo dados 
-removendo os NAs e variaves nao numericas da base de treino
+Pro último, limpamos o dataframe removendo missing data e variáveis não númericas da base de treino.
 ```{r}
 GK_EUROPE <- GK_EUROPE %>% 
   select_if(~ !any(is.na(.))) %>%
@@ -124,7 +125,7 @@ GK_EUROPE <- GK_EUROPE %>%
 
 head(GK_EUROPE)
 ```
-Removendo os NAs e variaves nao numericas da base de validacao
+E por fim, removemos os missing datas e variáveis não numéricas da nossa base de validação.
 ```{r}
 fifa.18.gk <- GK_NOT_EUROPE %>% 
   select_if(~ !any(is.na(.))) %>%
@@ -133,7 +134,8 @@ fifa.18.gk <- GK_NOT_EUROPE %>%
 head(fifa.18.gk)
 ```
 
-#  Treinamento e predicao
+#  Treinamento
+Nessa etapa iniciamos o processo de treinamento do nosso modelo.
 
 ## Boxplot 
 Grafico de boxplot simples
@@ -143,9 +145,9 @@ boxplot(GK_EUROPE)
 
 ```
 
-## Correlacao 
+## Correlação 
 
-Grafico de Correlacao simples
+Grafico de Correlação simples
 ```{r}
 corrMatrix <- cor(GK_EUROPE)
 corrplot.mixed(corrMatrix, 
@@ -231,7 +233,7 @@ fifa.18.gk %>%
 
 #  Resultado
 
-## resultado final com os goleiros e seus valores preditos 
+Resultado final com os goleiros e seus valores preditos
 
 ```{r}
 output <- GK_NOT_EUROPE %>%
@@ -254,6 +256,6 @@ head(output)
 ```
 *****
 # Rodapé
-### Case de Advanced Analytics
+Case de Advanced Analytics
 *****
 *Nilo Jose de Andrade Neto - São Paulo - 2021*
