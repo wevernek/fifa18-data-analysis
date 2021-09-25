@@ -194,13 +194,24 @@ fifa.18.cm %>%
 # Seleciona as variáveis 'Position', 'name', e 'eur_value' de MID_NOT_EUROPE e atribui
 # a nossa variável 'output' que servirá de demonstrativo para o nosso cliente final
 output <- MID_NOT_EUROPE %>%
-  select(Position, name, eur_value) 
+  select(Position, name, eur_value, overall) 
 
 # Trata os dados das colunas e seus nomes
+output[, 'predito' := as.integer(fifa.18.cm$predito)]
 output[, eur_value := currency(fifa.18.cm$eur_value, symbol = '€', digits = 0L)]
 output[, 'Preço "Calculado" (€)' := currency(fifa.18.cm$predito, symbol = '€', digits = 0L)]
 output[, 'Potencial Valorização (€)' := currency((fifa.18.cm$predito - fifa.18.cm$eur_value), symbol='€', digits = 0L) ]
 output[, 'Potencial Valorização (%)' := (percent((fifa.18.cm$predito - fifa.18.cm$eur_value) / 100000000)) ]
+
+
+# Top 10 melhores jogadores da posição (por valor de predição)
+output %>%
+  arrange(-predito) %>% 
+  top_n(10, wt = predito) %>% 
+  select(name, overall, predito, Position) %>% 
+  datatable(class = "nowrap hover row-border", escape = FALSE, options = list(dom = 't',
+                                                                              scrollX = TRUE, 
+                                                                              autoWidth = TRUE))
 
 # rename de algumas colunas
 output <- output %>% 
@@ -208,6 +219,10 @@ output <- output %>%
     'Posição' = Position,
     'Jogador' = name,
     'Preço de mercado' = eur_value
-  )
+  )  
+
+# Remove as colunas não mais utilizadas para o top 10 de predições
+output$predito <- NULL
+output$overall <- NULL
 
 head(output) # Print no console do output
