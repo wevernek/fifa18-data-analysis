@@ -158,7 +158,7 @@ head(fifa.18.om)
 Nessa etapa iniciamos o processo de treinamento do nosso modelo.
 
 ## Boxplot 
-Grafico de boxplot nos mostra que existem jogadores com valores descrepantes em relação as demais. 
+Grafico de boxplot nos mostra que existem jogadores com valores discrepantes em relação as demais. 
 ```{r}
 boxplot(OMID_EUROPE)
 ```

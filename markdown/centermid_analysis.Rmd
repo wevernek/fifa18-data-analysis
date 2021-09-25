@@ -37,7 +37,10 @@ options(scipen = 999, digits = 4)
 ```
 
 # Obtenção de Dados
-Os dados são obtidos de um servidor SQL ou csv e armazenados na variável `df`
+Carrega o nosso CSV
+O CSV foi gerado através de inner_joins das consultas do banco de dados cedido pelo do professor ... As tabelas utilizadas foram:
+'futebol.players', 'futebol.habilities', 'futebol.features' e 'futebol.financial' e o resultado final é lido logo abaixo.
+Observação: É necessário alterar o path do read_csv para apontar corretamente o arquivo .csv de acordo com o seu S. O.
 
 ```{r}
 df <- read_csv("/media/njaneto/HD1/FIAP/PROGRAMANDO_IA_COM_R/fifa18-data-analysis/model/data/fifa18.csv", locale = locale(encoding = "ISO-8859-1"))
@@ -76,7 +79,7 @@ df$continent[df$continent %in% South_america ] <- "South_america"
 
 ```
 ## Graficos de analise dos dados
-Antes de iniciar a nossa análise, iremos platar o dataframe para analisar o gráfico resultante.
+Antes de iniciar a nossa análise, iremos plotar o dataframe para analisar o gráfico resultante, para identificar as melhores variáveis. 
 ```{r}
 plot_intro(df)
 ```
@@ -96,6 +99,23 @@ mapCountryData(mapToPlot = fr,nameColumnToPlot = "N",catMethod = "fixedWidth",
                mapTitle = "Jogadores por país",
                aspect = "variable") 
 
+```
+
+Histograma de jogadores por overall
+Conseguimos identificar uma grande concentração de jogadores com overall entre 60 e 73
+```{r}
+histogram <- plot_ly(x = ~df$overall,
+                     type = "histogram",
+                     marker = list(color = "lightgray",
+                                   line = list(color = "darkgray",
+                                               width = 1))) %>%
+  layout(title = "Histograma por overall dos jogadores (Center-mid)",
+         xaxis = list(title = "Overall",
+                      zeroline = FALSE),
+         yaxis = list(title = "Quantidade",
+                      zeroline = FALSE))
+
+histogram
 ```
 
 
@@ -138,7 +158,7 @@ head(fifa.18.cm)
 Nessa etapa iniciamos o processo de treinamento do nosso modelo.
 
 ## Boxplot 
-Grafico de boxplot simples
+Grafico de boxplot nos mostra que existem jogadores com valores discrepantes em relação as demais. 
 ```{r}
 boxplot(MID_EUROPE)
 
@@ -147,7 +167,7 @@ boxplot(MID_EUROPE)
 
 ## Correlação 
 
-Grafico de Correlação simples
+Gráfico para mostrar a correlação de todas as variáveis. 
 ```{r}
 corrMatrix <- cor(MID_EUROPE)
 corrplot.mixed(corrMatrix, 
@@ -162,7 +182,7 @@ corrplot.mixed(corrMatrix,
 ```
 ## Definição do modelo de ML 
 
-Modelo com Floresta
+Testamos as funções ml() e randomFlorest() e a função randomFlorest() se mostrou mais assertivo para o nosso modelo.
 ```{r}
 set.seed(1)
 reg.test <- randomForest(formula = eur_value ~ ., 
@@ -175,7 +195,7 @@ plot(reg.test)
 ```
 # Predição
 ## Avaliação  
-Predição dos preços dos goleiros
+Predição dos preços 
 ```{r}
 predito = predict(reg.test, MID_EUROPE)
 print(paste("R2: ", R2_Score(predito, MID_EUROPE$eur_value) ) )
@@ -205,7 +225,7 @@ MID_EUROPE %>%
 
 ## Avaliação II
 ### Avaliação dos preços (baseado nos dados que nunca viu antes!)
-Predição dos preços dos goleiros
+Predição dos preços 
 ```{r}
 predito = predict(reg.test, fifa.18.cm)
 print(paste("R2: ", R2_Score(predito, fifa.18.cm$eur_value) ) )
