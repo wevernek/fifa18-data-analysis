@@ -157,7 +157,7 @@ head(fifa.18.gk)
 Nessa etapa iniciamos o processo de treinamento do nosso modelo.
 
 ## Boxplot 
-Grafico de boxplot nos mostra que existem jogadores com valores descrepantes em relação as demais. 
+Grafico de boxplot nos mostra que existem jogadores com valores discrepantes em relação as demais. 
 ```{r}
 boxplot(GK_EUROPE)
 
@@ -166,7 +166,7 @@ boxplot(GK_EUROPE)
 
 ## Correlação 
 
-Grafico de Correlação simples
+Gráfico para mostrar a correlação de todas as variáveis. 
 ```{r}
 corrMatrix <- cor(GK_EUROPE)
 corrplot.mixed(corrMatrix, 
@@ -179,9 +179,9 @@ corrplot.mixed(corrMatrix,
                addrect = 3)
 
 ```
-## Definição do modelo de ML 
+## Definição do modelo 
 
-Modelo com Floresta
+Testamos as funções ml() e randomFlorest() e a função randomFlorest() se mostrou mais assertivo para o nosso modelo.
 ```{r}
 set.seed(1)
 reg.test <- randomForest(formula = eur_value ~ ., 
@@ -194,7 +194,7 @@ plot(reg.test)
 ```
 # Predição
 ## Avaliação  
-Predição dos preços dos goleiros
+Predição dos preços 
 ```{r}
 predito = predict(reg.test, GK_EUROPE)
 print(paste("R2: ", R2_Score(predito, GK_EUROPE$eur_value) ) )
@@ -224,7 +224,7 @@ GK_EUROPE %>%
 
 ## Avaliação II
 ### Avaliação dos preços (baseado nos dados que nunca viu antes!)
-Predição dos preços dos goleiros
+Predição dos preços 
 ```{r}
 predito = predict(reg.test, fifa.18.gk)
 print(paste("R2: ", R2_Score(predito, fifa.18.gk$eur_value) ) )
